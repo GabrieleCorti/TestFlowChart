@@ -220,11 +220,11 @@ const initialNodes: Node<any>[] = [
 ];
 
 const initialEdges: Edge[] = [
-  { id: "e1-2", source: "1", target: "2", sourceHandle: "a" },
-  { id: "e1-2", source: "2", target: "3", sourceHandle: "a" },
-  { id: "e1-2", source: "2", target: "4", sourceHandle: "a" },
-  { id: "e1-2", source: "2", target: "5", sourceHandle: "a" },
-  { id: "e1-2", source: "2", target: "6", sourceHandle: "a" },
+  { id: "e1-2", source: "1", target: "2" },
+  { id: "e2-3", source: "2", target: "3" },
+  { id: "e2-4", source: "2", target: "4" },
+  { id: "e2-5", source: "2", target: "5" },
+  { id: "e2-6", source: "2", target: "6" },
 ];
 
 function App() {
@@ -289,20 +289,67 @@ function App() {
     () => ({
       historyPassage: HistoryNode,
       currentPassage: CurrentStepNode,
-      nextPassage: makeOnClick((t) =>
-        setNodes((prev) => [
-          ...prev,
-          {
-            id: "7",
-            position: { x: 480, y: 350 },
+      nextPassage: makeOnClick((t) => {
+        const id = String(Date.now());
+        let nodeCopy: Node<{
+          label: string;
+          onClick: (v: string) => void;
+        }>[] = [];
+        setNodes((prev) => {
+          nodeCopy = [...prev];
+          const oldCurrentNodeIndex = nodeCopy.findIndex(
+            (n) => n.type === "currentPassage"
+          );
+          if (oldCurrentNodeIndex === -1) {
+            return prev;
+          }
+          nodeCopy[oldCurrentNodeIndex] = {
+            ...nodeCopy[oldCurrentNodeIndex],
+            type: "historyPassage",
             data: {
-              label: "prossimo passaggio 4",
-              onClick: (v: string) => console.log(v),
+              label: "vecchi passaggio",
+              onClick: console.log,
             },
-            type: "nextPassage",
-          },
-        ])
-      ),
+          };
+          return [
+            ...nodeCopy,
+            {
+              id,
+              position: {
+                x: nodeCopy[oldCurrentNodeIndex].position.x + 60,
+                y: nodeCopy[oldCurrentNodeIndex].position.y,
+              },
+              data: {
+                label: "passaggio corrente",
+                onClick: (v: string) => console.log(v),
+              },
+              type: "currentPassage",
+            },
+          ];
+        });
+        const runtimeEdge = nodeCopy
+          .filter((e) => e.type === "historyPassage")
+          .map((e) => Number(e.id))
+          .sort()
+          .map((e, i, arr) => {
+            const nextElement = arr[i + 1];
+            if (!nextElement) {
+              return { id: `el${e}-${id}`, source: String(e), target: id };
+            }
+            return {
+              id: `el${e}-${nextElement}`,
+              source: String(e),
+              target: String(nextElement),
+            };
+          });
+        setEdges([
+          ...runtimeEdge,
+          { id: `el${id}-3`, source: id, target: "3" },
+          { id: `el${id}-4`, source: id, target: "4" },
+          { id: `el${id}-5`, source: id, target: "5" },
+          { id: `el${id}-6`, source: id, target: "6" },
+        ]);
+      }),
     }),
     []
   );
